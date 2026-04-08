@@ -1,0 +1,26 @@
+{
+  "name": "nulljmp-web-agent",
+  "version": "0.1.0",
+  "description": "Scalable Playwright worker system with RabbitMQ task queue",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "worker": "ts-node-dev --respawn --transpile-only src/worker/index.ts",
+    "start": "node dist/index.js",
+    "start:worker": "node dist/worker/index.js",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.4",
+    "dotenv": "^16.4.5",
+    "playwright": "^1.44.0"
+  },
+  "devDependencies": {
+    "@types/amqplib": "^0.10.5",
+    "@types/node": "^20.14.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.5"
+  }
+}
