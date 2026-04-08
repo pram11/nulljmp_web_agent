@@ -1,5 +1,20 @@
-/**
- * API server entry point — Phase 4 stub.
- * Kept minimal until the REST layer is built.
- */
-console.log("API server not yet implemented (Phase 4).");
+import { startServer } from "./api/server";
+import { rabbitMQ } from "./queue/connection";
+
+async function main() {
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  await startServer();
+}
+
+async function shutdown() {
+  console.log("\n[API] Shutting down …");
+  await rabbitMQ.close();
+  process.exit(0);
+}
+
+main().catch((err) => {
+  console.error("[API] Fatal:", err);
+  process.exit(1);
+});
