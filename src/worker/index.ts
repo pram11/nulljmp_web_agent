@@ -2,6 +2,7 @@ import { consumer } from "../queue/consumer";
 import { rabbitMQ } from "../queue/connection";
 import { browserSingleton } from "../browser/singleton";
 import { runJob } from "../browser/engine";
+import { publishResult } from "../queue/result-publisher";
 import type { JobPayload } from "../types";
 
 async function handleJob(payload: JobPayload): Promise<void> {
@@ -12,11 +13,13 @@ async function handleJob(payload: JobPayload): Promise<void> {
   const result = await runJob(payload);
 
   if (result.success) {
+    await publishResult(result);
     console.log(
       `[Worker] Job ${result.job_id} completed in ${result.duration_ms}ms`
     );
   } else {
-    // Re-throw so the consumer's retry/DLQ logic can handle it
+    // Re-throw so the consumer's retry/DLQ logic can handle it.
+    // Result is published only on the final exhaustion via onExhausted below.
     throw new Error(result.error ?? `Job ${result.job_id} failed`);
   }
 }
@@ -27,10 +30,17 @@ async function main(): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  // Pre-warm the browser so the first job doesn't pay the launch cost
   await browserSingleton.get();
 
-  await consumer.start(handleJob);
+  await consumer.start(handleJob, async (payload, error) => {
+    await publishResult({
+      job_id: payload.job_id,
+      success: false,
+      steps: [],
+      error: `Exhausted retries: ${error}`,
+      duration_ms: 0,
+    });
+  });
 }
 
 async function shutdown(): Promise<void> {

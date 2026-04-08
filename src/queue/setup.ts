@@ -5,7 +5,7 @@
 import { Channel } from "amqplib";
 import { config } from "../config";
 
-const { taskQueue, dlq, exchange } = config.rabbitmq;
+const { taskQueue, resultQueue, dlq, exchange } = config.rabbitmq;
 
 export async function setupQueues(channel: Channel): Promise<void> {
   // Dead-letter exchange (direct)
@@ -24,5 +24,8 @@ export async function setupQueues(channel: Channel): Promise<void> {
     },
   });
 
-  console.log(`[Queue] Declared: ${taskQueue} → DLX → ${dlq}`);
+  // Results queue – job outcomes published here for downstream consumers
+  await channel.assertQueue(resultQueue, { durable: true });
+
+  console.log(`[Queue] Declared: ${taskQueue} → DLX → ${dlq} | results: ${resultQueue}`);
 }

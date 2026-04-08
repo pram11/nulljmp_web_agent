@@ -5,11 +5,13 @@ import { setupQueues } from "./setup";
 import type { JobPayload } from "../types";
 
 export type JobHandler = (payload: JobPayload) => Promise<void>;
+/** Called once when a job exhausts all retries, just before nack → DLQ. */
+export type ExhaustedHandler = (payload: JobPayload, error: string) => Promise<void>;
 
 export class Consumer {
   private channel: Channel | null = null;
 
-  async start(handler: JobHandler): Promise<void> {
+  async start(handler: JobHandler, onExhausted?: ExhaustedHandler): Promise<void> {
     this.channel = await rabbitMQ.createChannel();
     await setupQueues(this.channel);
 
@@ -48,6 +50,16 @@ export class Consumer {
             console.error(
               `[Consumer] Job ${payload.job_id} exhausted retries — sending to DLQ`
             );
+            if (onExhausted) {
+              try {
+                await onExhausted(payload, message);
+              } catch (publishErr) {
+                console.error(
+                  `[Consumer] Failed to publish exhausted result for ${payload.job_id}:`,
+                  (publishErr as Error).message
+                );
+              }
+            }
             this.channel!.nack(msg, false, false); // route to DLQ via DLX
           }
         }

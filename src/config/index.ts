@@ -14,6 +14,7 @@ export const config = {
   rabbitmq: {
     url: optional("RABBITMQ_URL", "amqp://guest:guest@localhost:5672"),
     taskQueue: optional("RABBITMQ_TASK_QUEUE", "task_queue"),
+    resultQueue: optional("RABBITMQ_RESULT_QUEUE", "task_results"),
     dlq: optional("RABBITMQ_DLQ", "task_queue.dlq"),
     exchange: optional("RABBITMQ_EXCHANGE", "task_exchange"),
     prefetch: parseInt(optional("RABBITMQ_PREFETCH", "2"), 10),
